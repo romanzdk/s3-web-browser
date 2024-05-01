@@ -4,6 +4,7 @@ __pycache__
 .pytest_cache
 
 dev
+.env
 
 data/*
 !data/.gitkeep
