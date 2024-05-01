@@ -13,5 +13,5 @@ Description
 
 1. Specify AWS credentials in `.env` file:
 1. `docker build -t s3-browser .`
-1. `docker run -it --rm -p 5000:5000 --env-file .env s3-browser`
-1. Go to http://192.168.x.x:5000/ (see output of the container) to browse through your files
+1. `docker run -it --rm -p 8000:8000 --network=host --env-file .env s3-browser`
+1. Go to http://127.0.0.1:8000/ to browse through your files

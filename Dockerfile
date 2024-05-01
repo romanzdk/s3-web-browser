@@ -20,6 +20,6 @@ RUN usermod --home /tmp nobody
 USER nobody
 
 ENV PYTHONPATH /usr/src/app
-EXPOSE 5000
+EXPOSE 8000
 
-CMD ["python", "app.py"]
+CMD ["gunicorn", "app:app"]
