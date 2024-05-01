@@ -1,0 +1,17 @@
+<html>
+<body>
+    <h1>Contents of {{ bucket_name }}</h1>
+    {% if path %}
+    <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rsplit('/', 2)[0]) }}">Go Up</a>
+    {% endif %}
+    <ul>
+    {% for item in contents %}
+        {% if item.endswith('/') %}
+            <li><a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item) }}">{{ item }}</a></li>
+        {% else %}
+            <li>{{ item }}</li>
+        {% endif %}
+    {% endfor %}
+    </ul>
+</body>
+</html>
