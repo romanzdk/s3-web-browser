@@ -1,9 +1,14 @@
 <html>
-<body>
-    <form action="/" method="post">
-        Access Key: <input type="text" name="access_key"><br>
-        Secret Key: <input type="password" name="secret_key"><br>
-        <input type="submit" value="Browse S3">
-    </form>
-</body>
+  <body>
+    <h1>Buckets</h1>
+    <ul>
+      {% for bucket in buckets %}
+      <li>
+        <a href="{{ url_for('view_bucket', bucket_name=bucket.name) }}"
+          >{{ bucket.name }}</a
+        >
+      </li>
+      {% endfor %}
+    </ul>
+  </body>
 </html>

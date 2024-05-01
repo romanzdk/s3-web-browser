@@ -1,4 +1,4 @@
-FROM python:3.12.2-slim-bookworm
+FROM python:3.12.2-bookworm
 
 ARG POETRY_VERSION=1.8.1
 ENV POETRY_VERSION=$POETRY_VERSION
@@ -20,5 +20,6 @@ RUN usermod --home /tmp nobody
 USER nobody
 
 ENV PYTHONPATH /usr/src/app
+EXPOSE 5000
 
-CMD ["python", "-m", "app.py"]
+CMD ["python", "app.py"]

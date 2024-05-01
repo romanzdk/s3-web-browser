@@ -1,46 +1,46 @@
+import os
+
 import boto3
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, render_template
 
 app = Flask(__name__)
 app.secret_key = "your_secure_random_key_here"
 
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-@app.route("/", methods=["GET", "POST"])
+
+@app.route("/", methods=["GET"])
 def index():
-    if request.method == "POST":
-        access_key = request.form["access_key"]
-        secret_key = request.form["secret_key"]
-
-        session["credentials"] = {
-            "access_key": access_key,
-            "secret_key": secret_key,
-        }
-        return redirect(url_for("buckets"))
-    else:
-        return render_template("index.html")
+    s3 = boto3.resource(
+        "s3",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name="eu-central-1",
+    )
+    buckets = s3.buckets.all()
+    return render_template("index.html", buckets=buckets)
 
 
 @app.route("/buckets")
 def buckets():
-    creds = session["credentials"]
     s3 = boto3.resource(
         "s3",
-        aws_access_key_id=creds["access_key"],
-        aws_secret_access_key=creds["secret_key"],
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         region_name="eu-central-1",
     )
     buckets = s3.buckets.all()
-    return render_template("buckets.html", buckets=buckets)
+    return render_template("index.html", buckets=buckets)
 
 
 @app.route("/buckets/<bucket_name>", defaults={"path": ""})
 @app.route("/buckets/<bucket_name>/<path:path>")
 def view_bucket(bucket_name, path):
-    creds = session["credentials"]
     s3_client = boto3.client(
         "s3",
-        aws_access_key_id=creds["access_key"],
-        aws_secret_access_key=creds["secret_key"],
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         region_name="eu-central-1",
     )
 
@@ -69,4 +69,4 @@ def view_bucket(bucket_name, path):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
