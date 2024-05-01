@@ -1,0 +1,11 @@
+.git/
+
+# Python virtualenv
+env/
+
+# Editors
+.idea/
+.vscode/
+
+# Local environment variables
+.env

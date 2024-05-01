@@ -10,6 +10,13 @@ python = "^3.10"
 flask = "^3.0.3"
 boto3 = "^1.34.95"
 
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+mypy = "^1.10.0"
+ruff = "^0.4.2"
+types-beautifulsoup4 = "^4.12.0.20240229"
+pandas-stubs = "^2.2.1.240316"
+isort = "^5.13.2"
 
 [build-system]
 requires = ["poetry-core"]
