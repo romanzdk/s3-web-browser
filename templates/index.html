@@ -1,14 +1,12 @@
-<html>
-  <body>
-    <h1>Buckets</h1>
-    <ul>
-      {% for bucket in buckets %}
-      <li>
-        <a href="{{ url_for('view_bucket', bucket_name=bucket.name) }}"
-          >{{ bucket.name }}</a
-        >
-      </li>
-      {% endfor %}
-    </ul>
-  </body>
-</html>
+{% extends "base.html" %} {% block content %}
+<h4>Available Buckets</h4>
+<ul class="collection">
+  {% for bucket in buckets %}
+  <li class="collection-item">
+    <a href="{{ url_for('view_bucket', bucket_name=bucket.name) }}"
+      >{{ bucket.name }}</a
+    >
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,27 +1,25 @@
-<html>
-  <body>
-    <h1>Contents of {{ bucket_name }}</h1>
-    <a href="{{ url_for('index') }}">Back to Buckets</a>
-    {% if path %}
-    <!-- Link to go up one directory level -->
+{% extends "base.html" %} {% block content %}
+<h4>Contents of {{ bucket_name }}</h4>
+<a href="{{ url_for('index') }}" class="btn-small blue">Back to Buckets</a>
+{% if path %}
+<a
+  href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0]) }}"
+  class="btn-small"
+  >Go Up</a
+>
+{% endif %}
+<ul class="collection">
+  {% for item in contents %}
+  <li class="collection-item">
+    {% if item.type == "folder" %}
     <a
-      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0]) }}"
-      >Go Up</a
+      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}"
+      >{{ item.name }}</a
     >
+    {% else %} {{ item.name }} -
+    <a href="{{ item.url }}" target="_blank">Download</a>
     {% endif %}
-    <ul>
-      {% for item in contents %} {% if item.type == "folder" %}
-      <li>
-        <a
-          href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}"
-          >{{ item.name }}</a
-        >
-      </li>
-      {% else %}
-      <li>
-        {{ item.name }} - <a href="{{ item.url }}" target="_blank">Download</a>
-      </li>
-      {% endif %} {% endfor %}
-    </ul>
-  </body>
-</html>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
