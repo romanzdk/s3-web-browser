@@ -1,9 +1,30 @@
 [tool.poetry]
-name = "s3-browser"
+name = "s3-web-browser"
 version = "0.1.0"
-description = ""
-authors = ["Roman Zydyk <romanzdk@gmail.com>"]
+description = "Simple web-based file browser for S3 storage"
+package-mode = false
+
+authors = ["Roman Zydyk <romanzdk+pypi@gmail.com>"]
+maintainers = ["Roman Zydyk <romanzdk+pypi@gmail.com>"]
+
+include = ["LICENSE", "py.typed"]
+license = "MIT"
 readme = "README.md"
+
+homepage = "https://pypi.org/project/s3-web-browser/"
+repository = "https://github.com/romanzdk/s3-web-browser"
+
+keywords = ["python3"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Typing :: Typed",
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -12,13 +33,103 @@ boto3 = "^1.34.95"
 gunicorn = "^22.0.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
-mypy = "^1.10.0"
 ruff = "^0.4.2"
-types-beautifulsoup4 = "^4.12.0.20240229"
-pandas-stubs = "^2.2.1.240316"
-isort = "^5.13.2"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.urls]
+"Tracker" = "https://github.com/romanzdk/s3-web-browser/issues"
+
+[tool.ruff]
+lint.select = [
+    "A",   # Builtins
+    "ANN", # Annotations
+    "ARG", # Unused arguments
+    "B",   # Bugbear
+    "BLE", # Blind except
+    "C4",  # Comprehensions
+    "C90", # mccabe
+    "COM", # Commas
+    "D1",  # Undocumented public elements
+    "D2",  # Docstring conventions
+    "D3",  # Triple double quotes
+    "D4",  # Docstring text format
+    "DTZ", # Datetimes
+    "EM",  # Error messages
+    "ERA", # Commented-out code
+    "EXE", # Executable
+    "F",   # Pyflakes
+    "FA",  # __future__ annotations
+    "FLY", # F-strings
+    # "FURB", # Refurb
+    "G",   # Logging format
+    "I",   # Isort
+    "ICN", # Import conventions
+    "INP", # Disallow PEP-420 (Implicit namespace packages)
+    "INT", # gettext
+    "ISC", # Implicit str concat
+    # "LOG",  # Logging
+    "N",    # PEP-8 Naming
+    "NPY",  # Numpy
+    "PERF", # Unnecessary performance costs
+    "PGH",  # Pygrep hooks
+    "PIE",  # Unnecessary code
+    "PL",   # Pylint
+    "PT",   # Pytest
+    "PTH",  # Use Pathlib
+    "PYI",  # Stub files
+    "Q",    # Quotes
+    "RET",  # Return
+    "RUF",  # Ruff
+    "RSE",  # Raise
+    "S",    # Bandit
+    "SIM",  # Code simplification
+    "SLF",  # Private member access
+    "SLOT", # __slots__
+    "T10",  # Debugger
+    "T20",  # Print
+    "TCH",  # Type checking
+    "TID",  # Tidy imports
+    "TRY",  # Exception handling
+    "UP",   # Pyupgrade
+    "W",    # Warnings
+    "YTT",  # sys.version
+]
+lint.ignore = [
+    "D203",    # One blank line before class docstring
+    "D212",    # Multi-line summary first line
+    "PLR0913", # Too many arguments
+    "D100",    # Missing docstring in public module
+    "D102",    # Missing docstring in public method
+    "D103",    # Missing docstring in public function
+    "D104",    # Missing docstring in public package
+]
+lint.ignore-init-module-imports = true
+line-length = 120
+# preview = true
+show-fixes = true
+src = ["."]
+target-version = "py312"
+
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+multiline-quotes = "double"
+
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+
+[tool.ruff.lint.per-file-ignores]
+# https://docs.astral.sh/ruff/rules/
+"__init__.py" = ["F401", "F403", "F405"]
+
+
+[tool.ruff.lint.pylint]
+max-args = 15
+max-branches = 20
+max-returns = 10
+max-statements = 80
+
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"

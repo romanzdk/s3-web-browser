@@ -11,7 +11,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 
 @app.route("/", methods=["GET"])
-def index():
+def index() -> str:
     s3 = boto3.resource(
         "s3",
         aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -23,7 +23,7 @@ def index():
 
 
 @app.route("/buckets")
-def buckets():
+def buckets() -> str:
     s3 = boto3.resource(
         "s3",
         aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -36,7 +36,7 @@ def buckets():
 
 @app.route("/buckets/<bucket_name>", defaults={"path": ""})
 @app.route("/buckets/<bucket_name>/<path:path>")
-def view_bucket(bucket_name, path):
+def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client(
         "s3",
         aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -63,9 +63,7 @@ def view_bucket(bucket_name, path):
                 )  # URL expires in 1 hour
                 contents.append({"name": item["Key"], "type": "file", "url": url})
 
-    return render_template(
-        "bucket_contents.html", contents=contents, bucket_name=bucket_name, path=path
-    )
+    return render_template("bucket_contents.html", contents=contents, bucket_name=bucket_name, path=path)
 
 
 if __name__ == "__main__":

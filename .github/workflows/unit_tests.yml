@@ -1,0 +1,71 @@
+# This workflow will install Python dependencies,
+# run tests with a variety of Python versions,
+# and upload a new build to TestPyPI.
+#
+# For more information see:
+# https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Unit tests
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12']
+    env:
+      PYTHON_VERSION: ${{ matrix.python-version }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v9
+
+      - name: Install library and dependencies
+        run: |
+          poetry run pip install --upgrade pip setuptools
+          poetry install --with dev
+
+      - name: Run pytest
+        run: |
+          poetry run pytest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLATFORM: ${{ matrix.os }}
+
+      - name: Upload Results to CodeCov
+        if: success()
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: false
+          files: ./tests/coverage-html/index.html,./tests/coverage.xml
+          flags: unittests
+          name: ${{ matrix.os }} - Python ${{ matrix.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  testpypi-deploy:
+    name: Build and publish Python 🐍 distributions 📦 to TestPyPI
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish distribution 📦 to Test PyPI
+        uses: JRubics/poetry-publish@v2.0
+        continue-on-error: true
+        with:
+          ignore_dev_requirements: 'yes'
+          pypi_token: ${{ secrets.TEST_PYPI_PASSWORD }}
+          repository_name: 'testpypi'
+          repository_url: 'https://test.pypi.org/legacy/'
