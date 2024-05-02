@@ -10,6 +10,12 @@
 
 S3 Web Browser is a Flask-based web application that allows users to browse AWS S3 buckets and their contents via a simple web interface. This project leverages Boto3, AWS's SDK for Python, to interact with S3.
 
+![S3 web browser page preview](docs/image.png)
+
+![S3 web browser page preview](docs/image-1.png)
+
+![S3 web browser page preview](docs/image-2.png)
+
 ## Features
 
 - **List S3 Buckets**: View all S3 buckets available to the AWS account.
