@@ -29,7 +29,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 flask = "^3.0.3"
-boto3 = "^1.35.14"
+boto3 = "^1.35.15"
 gunicorn = "^23.0.0"
 
 [tool.poetry.group.dev.dependencies]
