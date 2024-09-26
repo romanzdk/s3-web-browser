@@ -4,20 +4,17 @@
 {% if path %}
 <a
   href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
-  class="btn-small"
-  >Go Up</a
->
+  class="btn-small">Go Up</a>
 {% endif %}
 <ul class="collection">
   {% for item in contents %}
   <li class="collection-item">
     {% if item.type == "folder" %}
     <a
-      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}"
-      >{{ item.name }}</a
-    >
-    {% else %} {{ item.name }} -
-    <a href="{{ item.url }}" target="_blank">Download</a>
+      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{
+      item.name }}</a>
+    {% else %} {{ item.date_modified }} | {{ item.size }} | {{ item.name }} - <a
+      href="{{ item.url }}" target="_blank">Download</a>
     {% endif %}
   </li>
   {% endfor %}
