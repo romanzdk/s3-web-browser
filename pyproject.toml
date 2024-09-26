@@ -31,6 +31,7 @@ python = "^3.10"
 flask = "^3.0.3"
 boto3 = "^1.35.27"
 gunicorn = "^23.0.0"
+botocore = "^1.35.27"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.6.8"
@@ -47,7 +48,6 @@ lint.select = [
     "BLE", # Blind except
     "C4",  # Comprehensions
     "C90", # mccabe
-    "COM", # Commas
     "D1",  # Undocumented public elements
     "D2",  # Docstring conventions
     "D3",  # Triple double quotes
@@ -65,7 +65,6 @@ lint.select = [
     "ICN", # Import conventions
     "INP", # Disallow PEP-420 (Implicit namespace packages)
     "INT", # gettext
-    "ISC", # Implicit str concat
     # "LOG",  # Logging
     "N",    # PEP-8 Naming
     "NPY",  # Numpy
@@ -102,7 +101,6 @@ lint.ignore = [
     "D103",    # Missing docstring in public function
     "D104",    # Missing docstring in public package
 ]
-lint.ignore-init-module-imports = true
 line-length = 120
 # preview = true
 show-fixes = true

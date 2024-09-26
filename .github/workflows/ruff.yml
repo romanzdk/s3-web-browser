@@ -30,7 +30,7 @@ jobs:
       - name: Install library and dependencies
         run: |
           poetry run pip install --upgrade pip setuptools
-          poetry install --only linters
+          poetry install --only dev
 
       - name: Lint with Ruff
         run: |
