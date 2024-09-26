@@ -102,7 +102,6 @@ lint.ignore = [
     "D103",    # Missing docstring in public function
     "D104",    # Missing docstring in public package
 ]
-lint.ignore-init-module-imports = true
 line-length = 120
 # preview = true
 show-fixes = true
