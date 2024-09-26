@@ -4,7 +4,7 @@ import boto3
 from flask import Flask, render_template
 
 app = Flask(__name__)
-app.secret_key = "your_secure_random_key_here"
+app.secret_key = "your_secure_random_key_here"  # noqa: S105
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -40,7 +40,27 @@ def buckets() -> str:
 def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
 
-    response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=path, Delimiter="/")
+    try:
+        response = s3_client.list_objects_v2(
+            Bucket=bucket_name, Prefix=path, Delimiter="/"
+        )
+    except botocore.exceptions.ClientError as e:
+        match e.response["Error"]["Code"]:
+            case "AccessDenied":
+                return render_template(
+                    "error.html",
+                    error="You do not have permission to access this bucket.",
+                )
+            case "NoSuchBucket":
+                return render_template(
+                    "error.html", error="The specified bucket does not exist."
+                )
+            case _:
+                return render_template(
+                    "error.html", error=f"An unknown error occurred: {e}"
+                )
+    except Exception as e:  # noqa: BLE001
+        return render_template("error.html", error=f"An unknown error occurred: {e}")
     contents = []
 
     # Add folders to contents
