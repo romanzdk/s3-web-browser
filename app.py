@@ -43,9 +43,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
 
     try:
-        response = s3_client.list_objects_v2(
-            Bucket=bucket_name, Prefix=path, Delimiter="/"
-        )
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=path, Delimiter="/")
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -54,13 +52,9 @@ def view_bucket(bucket_name: str, path: str) -> str:
                     error="You do not have permission to access this bucket.",
                 )
             case "NoSuchBucket":
-                return render_template(
-                    "error.html", error="The specified bucket does not exist."
-                )
+                return render_template("error.html", error="The specified bucket does not exist.")
             case _:
-                return render_template(
-                    "error.html", error=f"An unknown error occurred: {e}"
-                )
+                return render_template("error.html", error=f"An unknown error occurred: {e}")
     except Exception as e:  # noqa: BLE001
         return render_template("error.html", error=f"An unknown error occurred: {e}")
     contents = []
@@ -88,7 +82,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
                 )  # URL expires in 1 hour
                 contents.append(
                     {
-                        "name": item["Key"],
+                        "name": f'{bucket_name}/{item["Key"]}',
                         "type": "file",
                         "url": url,
                         "size": humanize.naturalsize(item["Size"]),
