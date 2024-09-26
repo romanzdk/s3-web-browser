@@ -2,6 +2,7 @@ import os
 
 import boto3
 import botocore
+import humanize
 from flask import Flask, render_template
 
 app = Flask(__name__)
@@ -42,9 +43,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
 
     try:
-        response = s3_client.list_objects_v2(
-            Bucket=bucket_name, Prefix=path, Delimiter="/"
-        )
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=path, Delimiter="/")
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -53,13 +52,9 @@ def view_bucket(bucket_name: str, path: str) -> str:
                     error="You do not have permission to access this bucket.",
                 )
             case "NoSuchBucket":
-                return render_template(
-                    "error.html", error="The specified bucket does not exist."
-                )
+                return render_template("error.html", error="The specified bucket does not exist.")
             case _:
-                return render_template(
-                    "error.html", error=f"An unknown error occurred: {e}"
-                )
+                return render_template("error.html", error=f"An unknown error occurred: {e}")
     except Exception as e:  # noqa: BLE001
         return render_template("error.html", error=f"An unknown error occurred: {e}")
     contents = []
@@ -67,7 +62,14 @@ def view_bucket(bucket_name: str, path: str) -> str:
     # Add folders to contents
     if "CommonPrefixes" in response:
         for item in response["CommonPrefixes"]:
-            contents.append({"name": item["Prefix"], "type": "folder"})  # noqa: PERF401
+            contents.append(  # noqa: PERF401
+                {
+                    "name": item["Prefix"],
+                    "type": "folder",
+                    "size": 0,
+                    "date_modified": "",
+                }
+            )
 
     # Add files to contents
     if "Contents" in response:
@@ -78,7 +80,15 @@ def view_bucket(bucket_name: str, path: str) -> str:
                     Params={"Bucket": bucket_name, "Key": item["Key"]},
                     ExpiresIn=3600,
                 )  # URL expires in 1 hour
-                contents.append({"name": item["Key"], "type": "file", "url": url})
+                contents.append(
+                    {
+                        "name": f'{bucket_name}/{item["Key"]}',
+                        "type": "file",
+                        "url": url,
+                        "size": humanize.naturalsize(item["Size"]),
+                        "date_modified": item["LastModified"],
+                    }
+                )
 
     return render_template(
         "bucket_contents.html",
