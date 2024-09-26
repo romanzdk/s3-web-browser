@@ -1,6 +1,7 @@
 import os
 
 import boto3
+import botocore
 from flask import Flask, render_template
 
 app = Flask(__name__)
