@@ -3,7 +3,7 @@
 <a href="{{ url_for('index') }}" class="btn-small blue">Back to Buckets</a>
 {% if path %}
 <a
-  href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0]) }}"
+  href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
   class="btn-small"
   >Go Up</a
 >
