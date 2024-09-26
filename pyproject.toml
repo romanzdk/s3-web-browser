@@ -33,7 +33,7 @@ boto3 = "^1.35.26"
 gunicorn = "^23.0.0"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.6.7"
+ruff = "^0.6.8"
 
 [tool.poetry.urls]
 "Tracker" = "https://github.com/romanzdk/s3-web-browser/issues"
