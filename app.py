@@ -8,15 +8,24 @@ app.secret_key = "your_secure_random_key_here"
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "eu-central-1")
+AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", None)
+
+AWS_KWARGS = {
+    "aws_access_key_id": AWS_ACCESS_KEY_ID,
+    "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
+    "region_name": AWS_DEFAULT_REGION,
+}
+
+if AWS_ENDPOINT_URL:
+    AWS_KWARGS["endpoint_url"] = AWS_ENDPOINT_URL
 
 
 @app.route("/", methods=["GET"])
 def index() -> str:
     s3 = boto3.resource(
         "s3",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name="eu-central-1",
+        **AWS_KWARGS,
     )
     buckets = s3.buckets.all()
     return render_template("index.html", buckets=buckets)
@@ -26,9 +35,7 @@ def index() -> str:
 def buckets() -> str:
     s3 = boto3.resource(
         "s3",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name="eu-central-1",
+        **AWS_KWARGS,
     )
     buckets = s3.buckets.all()
     return render_template("index.html", buckets=buckets)
@@ -39,9 +46,7 @@ def buckets() -> str:
 def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client(
         "s3",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name="eu-central-1",
+        **AWS_KWARGS,
     )
 
     response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=path, Delimiter="/")

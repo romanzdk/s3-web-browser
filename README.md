@@ -26,7 +26,8 @@ S3 Web Browser is a Flask-based web application that allows users to browse AWS 
 
 ### In Docker
 
-1. Specify AWS credentials in `.env` file:
+1. Specify AWS credentials (`AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY`) in `.env` file (example with file `.env.example`). 
+   Note that you can specify specific region and endpoint with `AWS_DEFAULT_REGION` and `AWS_ENDPOINT_URL`.
 1. `docker build -t s3-browser .`
 1. `docker run -it --rm -p 8000:8000 --network=host --env-file .env s3-browser`
 1. Go to http://127.0.0.1:8000/ to browse through your files
@@ -43,7 +44,7 @@ S3 Web Browser is a Flask-based web application that allows users to browse AWS 
    export AWS_SECRET_ACCESS_KEY="your_secret_access_key"
    ```
 
-1. Run app - `gunicorn app:app`
+1. Run app - `poetry run gunicorn app:app`
 1. Access the app at http://127.0.0.1:8000/
 
 ## License
