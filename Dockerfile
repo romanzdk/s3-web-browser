@@ -19,7 +19,7 @@ RUN chown -R nobody /usr/src/app/
 RUN usermod --home /tmp nobody
 USER nobody
 
-ENV PYTHONPATH /usr/src/app
+ENV PYTHONPATH=/usr/src/app
 EXPOSE 8000
 
 CMD ["gunicorn", "app:app"]
