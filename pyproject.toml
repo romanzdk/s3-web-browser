@@ -35,7 +35,7 @@ botocore = "^1.35.29"
 humanize = "^4.10.0"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.6.8"
+ruff = "^0.6.9"
 
 [tool.poetry.urls]
 "Tracker" = "https://github.com/romanzdk/s3-web-browser/issues"
