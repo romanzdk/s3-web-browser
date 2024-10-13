@@ -76,32 +76,31 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
     return contents
 
 
+def list_objects(s3_client: botocore.client.BaseClient, bucket_name: str, path: str, delimiter: str = ''):
+    responses = []
+    list_params = {'Bucket': bucket_name, 'Prefix': path}
+    if delimiter:
+        list_params['Delimiter'] = '/'
+
+    while True:
+        response = s3_client.list_objects_v2(**list_params)
+        responses.append(response)
+        if response['IsTruncated']:
+            list_params['ContinuationToken'] = response['NextContinuationToken']
+        else:
+            break
+
+    return responses
+
+
 @app.route("/search//buckets/<bucket_name>", defaults={"path": ""})
 @app.route("/search/buckets/<bucket_name>/<path:path>")
 def search_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
     responses = []
     try:
-        marker = ''
-        while True:
-            response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                                 Prefix=path,
-                                                 ContinuationToken=marker)
-            responses.append(response)
-            if not response['IsTruncated']:
-                break
-            marker = response['NextContinuationToken']
-        marker = ''
-        s3_client = boto3.client("s3", **AWS_KWARGS)
-        while True:
-            response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                                 Prefix=path,
-                                                 ContinuationToken=marker,
-                                                 Delimiter="/")
-            responses.append(response)
-            if not response['IsTruncated']:
-                break
-            marker = response['NextContinuationToken']
+        responses.extend(list_objects(s3_client, bucket_name, path))
+        responses.extend(list_objects(s3_client, bucket_name, path, '/'))
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -133,16 +132,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
     responses = []
     try:
-        marker = ''
-        while True:
-            response = s3_client.list_objects_v2(Bucket=bucket_name,
-                                                 Prefix=path,
-                                                 Delimiter="/",
-                                                 ContinuationToken=marker)
-            responses.append(response)
-            if not response['IsTruncated']:
-                break
-            marker = response['NextContinuationToken']
+        responses.extend(list_objects(s3_client, bucket_name, path, '/'))
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
