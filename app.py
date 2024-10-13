@@ -92,6 +92,7 @@ def search_bucket(bucket_name: str, path: str) -> str:
                 break
             marker = response['NextContinuationToken']
         marker = ''
+        s3_client = boto3.client("s3", **AWS_KWARGS)
         while True:
             response = s3_client.list_objects_v2(Bucket=bucket_name,
                                                  Prefix=path,
