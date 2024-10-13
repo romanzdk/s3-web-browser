@@ -36,7 +36,7 @@ def buckets() -> str:
     return render_template("index.html", buckets=buckets)
 
 
-def parse_responses(responses, s3_client, bucket_name, search_param):
+def parse_responses(responses: list, s3_client: botocore.client.BaseClient, bucket_name: str, search_param: str):
     contents = []
     for response in responses:
         # Add folders to contents
