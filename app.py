@@ -70,6 +70,7 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
                         }
                     )
 
+    contents = list(set(contents))
     if search_param:
         contents = list(filter(lambda x: search_param in x['name'], contents))
     contents = sorted(contents, key=lambda x: x["type"], reverse=True)
