@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block content %}
 <form action="{{ url_for('search_bucket', bucket_name=bucket_name, path=path) }}">
   <input class="form-control" name="search" placeholder="{{ search_param }}" autocomplete="off" autofocus="autofocus" type="text">
-  <input type="submit" value="Submit" />
+  <input type="submit" value="Search" />
 </form>
 <h4>Contents of {{ bucket_name }}</h4>
 <a href="{{ url_for('index') }}" class="btn-small blue">Back to Buckets</a>
