@@ -1,4 +1,6 @@
+import dataclasses
 import os
+
 import boto3
 import botocore
 import humanize
@@ -36,19 +38,28 @@ def buckets() -> str:
     return render_template("index.html", buckets=buckets)
 
 
-def parse_responses(responses: list, s3_client: botocore.client.BaseClient, bucket_name: str, search_param: str):
-    contents = []
+@dataclasses.dataclass
+class S3Entry:
+    """Representation of S3 object."""
+
+    name: str
+    type: str
+    url: str = ""
+    size: str = ""
+    date_modified: str = ""
+
+
+def parse_responses(responses: list, s3_client: botocore.client.BaseClient, bucket_name: str, search_param: str) -> list[S3Entry]:
+    contents: set[S3Entry] = set()
     for response in responses:
         # Add folders to contents
         if "CommonPrefixes" in response:
             for item in response["CommonPrefixes"]:
-                contents.append(  # noqa: PERF401
-                    {
+                contents.add(
+                    S3Entry({
                         "name": item["Prefix"],
-                        "type": "folder",
-                        "size": 0,
-                        "date_modified": "",
-                    }
+                        "type": "folder"
+                    })
                 )
 
         # Add files to contents
@@ -60,21 +71,20 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
                         Params={"Bucket": bucket_name, "Key": item["Key"]},
                         ExpiresIn=3600,
                     )  # URL expires in 1 hour
-                    contents.append(
-                        {
+                    contents.add(
+                        S3Entry({
                             "name": f'{bucket_name}/{item["Key"]}',
                             "type": "file",
                             "url": url,
                             "size": humanize.naturalsize(item["Size"]),
                             "date_modified": item["LastModified"],
-                        }
+                        })
                     )
 
-    contents = list(set(contents))
+    contents_list = list(contents)
     if search_param:
-        contents = list(filter(lambda x: search_param in x['name'], contents))
-    contents = sorted(contents, key=lambda x: x["type"], reverse=True)
-    return contents
+        contents_list = list(filter(lambda x: search_param in x.name, contents_list))
+    return sorted(contents_list, key=lambda x: x.type, reverse=True)
 
 
 def list_objects(s3_client: botocore.client.BaseClient, bucket_name: str, path: str, delimiter: str = ''):
