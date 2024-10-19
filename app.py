@@ -87,17 +87,17 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
     return sorted(contents_list, key=lambda x: x.type, reverse=True)
 
 
-def list_objects(s3_client: botocore.client.BaseClient, bucket_name: str, path: str, delimiter: str = ''):
+def list_objects(s3_client: botocore.client.BaseClient, bucket_name: str, path: str, delimiter: str = "") -> list[dict]:
     responses = []
-    list_params = {'Bucket': bucket_name, 'Prefix': path}
+    list_params = {"Bucket": bucket_name, "Prefix": path}
     if delimiter:
-        list_params['Delimiter'] = '/'
+        list_params["Delimiter"] = "/"
 
     while True:
         response = s3_client.list_objects_v2(**list_params)
         responses.append(response)
-        if response['IsTruncated']:
-            list_params['ContinuationToken'] = response['NextContinuationToken']
+        if response["IsTruncated"]:
+            list_params["ContinuationToken"] = response["NextContinuationToken"]
         else:
             break
 
@@ -111,7 +111,7 @@ def search_bucket(bucket_name: str, path: str) -> str:
     responses = []
     try:
         responses.extend(list_objects(s3_client, bucket_name, path))
-        responses.extend(list_objects(s3_client, bucket_name, path, '/'))
+        responses.extend(list_objects(s3_client, bucket_name, path, "/"))
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -126,7 +126,8 @@ def search_bucket(bucket_name: str, path: str) -> str:
     except Exception as e:  # noqa: BLE001
         return render_template("error.html", error=f"An unknown error occurred: {e}")
 
-    search_param = request.args['search'] if 'search' in request.args else ''
+
+    search_param = request.args.get("search", "")
     contents = parse_responses(responses, s3_client, bucket_name, search_param)
     return render_template(
         "bucket_contents.html",
@@ -143,7 +144,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
     responses = []
     try:
-        responses.extend(list_objects(s3_client, bucket_name, path, '/'))
+        responses.extend(list_objects(s3_client, bucket_name, path, "/"))
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -158,7 +159,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
     except Exception as e:  # noqa: BLE001
         return render_template("error.html", error=f"An unknown error occurred: {e}")
 
-    search_param = request.args['search'] if 'search' in request.args else ''
+    search_param = request.args.get("search", "")
     contents = parse_responses(responses, s3_client, bucket_name, search_param)
     return render_template(
         "bucket_contents.html",

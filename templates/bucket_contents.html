@@ -6,22 +6,20 @@
   <button class="btn waves-effect waves-light" type="submit" name="action">
     Search
   </button>
+</form>
 <h4>Contents of {{ bucket_name }}</h4>
 <a href="{{ url_for('index') }}" class="btn-small blue">Back to Buckets</a>
 {% if path %}
-<a
-  href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
+<a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
   class="btn-small">Go Up</a>
 {% endif %}
 <ul class="collection">
   {% for item in contents %}
   <li class="collection-item">
     {% if item.type == "folder" %}
-    <a
-      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{
-      item.name }}</a>
-    {% else %} {{ item.date_modified }} | {{ item.size }} | <a
-      href="{{ item.url }}" target="_blank">{{ item.name }}</a>
+      <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{ item.name }}</a>
+    {% else %}
+      {{ item.date_modified }} | {{ item.size }} | <a href="{{ item.url }}" target="_blank">{{ item.name }}</a>
     {% endif %}
   </li>
   {% endfor %}
