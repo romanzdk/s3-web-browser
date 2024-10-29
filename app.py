@@ -27,15 +27,15 @@ if AWS_ENDPOINT_URL:
 @app.route("/", methods=["GET"])
 def index() -> str:
     s3 = boto3.resource("s3", **AWS_KWARGS)
-    buckets = s3.buckets.all()
-    return render_template("index.html", buckets=buckets)
+    all_buckets = s3.buckets.all()
+    return render_template("index.html", buckets=all_buckets)
 
 
 @app.route("/buckets")
 def buckets() -> str:
     s3 = boto3.resource("s3", **AWS_KWARGS)
-    buckets = s3.buckets.all()
-    return render_template("index.html", buckets=buckets)
+    all_buckets = s3.buckets.all()
+    return render_template("index.html", buckets=all_buckets)
 
 
 @dataclasses.dataclass
@@ -55,12 +55,7 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
         # Add folders to contents
         if "CommonPrefixes" in response:
             for item in response["CommonPrefixes"]:
-                contents.add(
-                    S3Entry({
-                        "name": item["Prefix"],
-                        "type": "folder"
-                    })
-                )
+                contents.add(S3Entry(name=item["Prefix"], type="folder"))
 
         # Add files to contents
         if "Contents" in response:
@@ -72,13 +67,12 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
                         ExpiresIn=3600,
                     )  # URL expires in 1 hour
                     contents.add(
-                        S3Entry({
-                            "name": f'{bucket_name}/{item["Key"]}',
-                            "type": "file",
-                            "url": url,
-                            "size": humanize.naturalsize(item["Size"]),
-                            "date_modified": item["LastModified"],
-                        })
+                        S3Entry(
+                            name=f'{bucket_name}/{item["Key"]}',
+                            type="file",
+                            url=url,
+                            size=humanize.naturalsize(item["Size"]),
+                            date_modified=item["LastModified"])
                     )
 
     contents_list = list(contents)
@@ -125,7 +119,6 @@ def search_bucket(bucket_name: str, path: str) -> str:
                 return render_template("error.html", error=f"An unknown error occurred: {e}")
     except Exception as e:  # noqa: BLE001
         return render_template("error.html", error=f"An unknown error occurred: {e}")
-
 
     search_param = request.args.get("search", "")
     contents = parse_responses(responses, s3_client, bucket_name, search_param)
