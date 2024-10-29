@@ -38,7 +38,7 @@ def buckets() -> str:
     return render_template("index.html", buckets=all_buckets)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(eq=True, frozen=True)
 class S3Entry:
     """Representation of S3 object."""
 
