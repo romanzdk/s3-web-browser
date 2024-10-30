@@ -11,45 +11,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build Binaries for ${{ matrix.os }}-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.12']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v9
-
-      - name: Install library and dependencies
-        run: |
-          poetry run pip install --upgrade pip setuptools
-          poetry install
-
-      - name: Build releases
-        run: |
-          poetry build
-
-      - name: Upload builds
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-binary
-          path: |
-            dist/*.whl
-            dist/*.tar.gz
-
   release:
     name: Create Release
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
