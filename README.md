@@ -20,6 +20,7 @@ S3 Web Browser is a Flask-based web application that allows users to browse AWS 
 
 - **List S3 Buckets**: View all S3 buckets available to the AWS account.
 - **Browse Bucket Contents**: Navigate through the contents of any S3 bucket, including folders and files.
+- **Search Bucket Contents**: Search for files/folders in any S3 bucket, The search will be recursive from the point of origin.
 - **Generate Presigned URLs**: Securely generate temporary URLs for S3 objects, making them accessible for a limited time.
 
 ## Run
