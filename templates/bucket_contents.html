@@ -19,7 +19,7 @@
     {% if item.type == "folder" %}
       <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{ item.name }}</a>
     {% else %}
-      {{ item.date_modified }} | {{ item.size }} | <a href="{{ item.url }}" target="_blank">{{ item.name }}</a>
+      {{ item.date_modified }} | {{ item.size }} | <a href="{{ url_for('download_file', bucket_name=bucket_name, path=item.name) }}" target="_blank">{{ item.name }}</a>
     {% endif %}
   </li>
   {% endfor %}
