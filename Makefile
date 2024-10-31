@@ -44,3 +44,21 @@ test: $(INSTALL_STAMP)
 clean:
     # Delete all files in .gitignore
 	git clean -Xdf
+
+VERSION ?= latest
+IMAGE_NAME = romanzdk/s3-web-browser
+
+.PHONY: release
+release:
+ifeq ($(VERSION), latest)
+	@echo "Skipping git tagging for latest version"
+else
+	git tag v$(VERSION)
+	git push --tags
+endif
+	docker build -t $(IMAGE_NAME):$(VERSION)-arm .
+	docker push $(IMAGE_NAME):$(VERSION)-arm
+	docker build -t $(IMAGE_NAME):latest-arm .
+	docker push $(IMAGE_NAME):latest-arm
+	docker buildx build --platform linux/amd64 -t $(IMAGE_NAME):$(VERSION) --push .
+	docker buildx build --platform linux/amd64 -t $(IMAGE_NAME):latest --push .

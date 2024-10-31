@@ -18,11 +18,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: built-binary
-
       - name: Check Version
         uses: nowsprinting/check-version-format-action@v4
         id: version
