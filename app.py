@@ -4,7 +4,7 @@ import os
 import boto3
 import botocore
 import humanize
-from flask import Flask, render_template, request
+from flask import Flask, Response, redirect, render_template, request
 
 app = Flask(__name__)
 app.secret_key = "your_secure_random_key_here"  # noqa: S105
@@ -44,12 +44,11 @@ class S3Entry:
 
     name: str
     type: str
-    url: str = ""
     size: str = ""
     date_modified: str = ""
 
 
-def parse_responses(responses: list, s3_client: botocore.client.BaseClient, bucket_name: str, search_param: str) -> list[S3Entry]:
+def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
     contents: set[S3Entry] = set()
     for response in responses:
         # Add folders to contents
@@ -61,16 +60,10 @@ def parse_responses(responses: list, s3_client: botocore.client.BaseClient, buck
         if "Contents" in response:
             for item in response["Contents"]:
                 if not item["Key"].endswith("/"):
-                    url = s3_client.generate_presigned_url(
-                        "get_object",
-                        Params={"Bucket": bucket_name, "Key": item["Key"]},
-                        ExpiresIn=3600,
-                    )  # URL expires in 1 hour
                     contents.add(
                         S3Entry(
-                            name=f'{bucket_name}/{item["Key"]}',
+                            name=item["Key"],
                             type="file",
-                            url=url,
                             size=humanize.naturalsize(item["Size"]),
                             date_modified=item["LastModified"])
                     )
@@ -98,7 +91,7 @@ def list_objects(s3_client: botocore.client.BaseClient, bucket_name: str, path: 
     return responses
 
 
-@app.route("/search//buckets/<bucket_name>", defaults={"path": ""})
+@app.route("/search/buckets/<bucket_name>", defaults={"path": ""})
 @app.route("/search/buckets/<bucket_name>/<path:path>")
 def search_bucket(bucket_name: str, path: str) -> str:
     s3_client = boto3.client("s3", **AWS_KWARGS)
@@ -121,7 +114,7 @@ def search_bucket(bucket_name: str, path: str) -> str:
         return render_template("error.html", error=f"An unknown error occurred: {e}")
 
     search_param = request.args.get("search", "")
-    contents = parse_responses(responses, s3_client, bucket_name, search_param)
+    contents = parse_responses(responses, search_param)
     return render_template(
         "bucket_contents.html",
         contents=contents,
@@ -153,7 +146,7 @@ def view_bucket(bucket_name: str, path: str) -> str:
         return render_template("error.html", error=f"An unknown error occurred: {e}")
 
     search_param = request.args.get("search", "")
-    contents = parse_responses(responses, s3_client, bucket_name, search_param)
+    contents = parse_responses(responses, search_param)
     return render_template(
         "bucket_contents.html",
         contents=contents,
@@ -161,6 +154,17 @@ def view_bucket(bucket_name: str, path: str) -> str:
         path=path,
         search_param=search_param,
     )
+
+
+@app.route("/download/buckets/<bucket_name>/<path:path>")
+def download_file(bucket_name: str, path: str) -> Response:
+    s3_client = boto3.client("s3", **AWS_KWARGS)
+    url = s3_client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket_name, "Key": path},
+        ExpiresIn=3600,
+    )  # URL expires in 1 hour
+    return redirect(url)
 
 
 if __name__ == "__main__":
