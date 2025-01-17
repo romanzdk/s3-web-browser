@@ -74,7 +74,7 @@ def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
     contents_list = list(contents)
     if search_param:
         contents_list = list(filter(lambda x: search_param in x.name, contents_list))
-    return sorted(contents_list, key=lambda x: x.type, reverse=True)
+    return sorted(contents_list, key=lambda x: (x.type == "file", x.name.lower()))
 
 
 def list_objects(
