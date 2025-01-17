@@ -54,12 +54,12 @@ def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
     contents: set[S3Entry] = set()
     for response in responses:
         # Add folders to contents
-        if "CommonPrefixes" in response:
+        if isinstance(response, dict) and "CommonPrefixes" in response:
             for item in response["CommonPrefixes"]:
                 contents.add(S3Entry(name=item["Prefix"], type="folder"))
 
         # Add files to contents
-        if "Contents" in response:
+        if isinstance(response, dict) and "Contents" in response:
             for item in response["Contents"]:
                 if not item["Key"].endswith("/"):
                     contents.add(
@@ -73,7 +73,8 @@ def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
 
     contents_list = list(contents)
     if search_param:
-        contents_list = list(filter(lambda x: search_param in x.name, contents_list))
+        # TODO: use regex
+        contents_list = list(filter(lambda x: search_param.lower() in x.name.lower(), contents_list))
     return sorted(contents_list, key=lambda x: (x.type == "file", x.name.lower()))
 
 
@@ -83,8 +84,8 @@ def list_objects(
     path: str,
     delimiter: str = "",
     page_token: str | None = None,
-) -> list[dict]:
-    list_params = {"Bucket": bucket_name, "Prefix": path, "MaxKeys": 500}
+) -> dict:
+    list_params = {"Bucket": bucket_name, "Prefix": path, "MaxKeys": PAGE_ITEMS}
     if delimiter:
         list_params["Delimiter"] = "/"
     if page_token:
@@ -96,11 +97,50 @@ def list_objects(
 @app.route("/search/buckets/<bucket_name>", defaults={"path": ""})
 @app.route("/search/buckets/<bucket_name>/<path:path>")
 def search_bucket(bucket_name: str, path: str) -> str:
+    page = request.args.get("page", 1, type=int)
+    items_per_page = PAGE_ITEMS
     s3_client = boto3.client("s3", **AWS_KWARGS)
-    responses = []
+    paginator = s3_client.get_paginator("list_objects_v2")
+    all_entries = []
+    all_prefixes = []
+
     try:
-        responses.extend(list_objects(s3_client, bucket_name, path))
-        responses.extend(list_objects(s3_client, bucket_name, path, "/"))
+        # Collect all objects and folders
+        for page_iterator in paginator.paginate(Bucket=bucket_name, Prefix=path):
+            if "Contents" in page_iterator:
+                all_entries = [
+                    {"Key": item["Key"], "Size": item["Size"], "LastModified": item["LastModified"]}
+                    for item in page_iterator["Contents"]
+                    if not item["Key"].endswith("/")
+                ]
+
+        for page_iterator in paginator.paginate(Bucket=bucket_name, Prefix=path, Delimiter="/"):
+            if "CommonPrefixes" in page_iterator:
+                all_prefixes.extend(page_iterator["CommonPrefixes"])
+
+        # Create response structure
+        response = {"Contents": all_entries, "CommonPrefixes": all_prefixes}
+
+        search_param = request.args.get("search", "")
+        contents = parse_responses([response], search_param)
+
+        # Calculate pagination
+        total_items = len(contents)
+        total_pages = (total_items + items_per_page - 1) // items_per_page
+        start_idx = (page - 1) * items_per_page
+        end_idx = start_idx + items_per_page
+        paginated_contents = contents[start_idx:end_idx]
+
+        return render_template(
+            "bucket_contents.html",
+            contents=paginated_contents,
+            bucket_name=bucket_name,
+            path=path,
+            search_param=search_param,
+            current_page=page,
+            total_pages=total_pages,
+        )
+
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -112,18 +152,6 @@ def search_bucket(bucket_name: str, path: str) -> str:
                 return render_template("error.html", error="The specified bucket does not exist.")
             case _:
                 return render_template("error.html", error=f"An unknown error occurred: {e}")
-    except Exception as e:  # noqa: BLE001
-        return render_template("error.html", error=f"An unknown error occurred: {e}")
-
-    search_param = request.args.get("search", "")
-    contents = parse_responses(responses, search_param)
-    return render_template(
-        "bucket_contents.html",
-        contents=contents,
-        bucket_name=bucket_name,
-        path=path,
-        search_param=search_param,
-    )
 
 
 @app.route("/buckets/<bucket_name>", defaults={"path": ""})
