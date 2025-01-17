@@ -14,6 +14,8 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "eu-central-1")
 AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", None)
 
+PAGE_ITEMS = int(os.getenv("PAGE_ITEMS", "300"))
+
 AWS_KWARGS = {
     "aws_access_key_id": AWS_ACCESS_KEY_ID,
     "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
@@ -65,7 +67,8 @@ def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
                             name=item["Key"],
                             type="file",
                             size=humanize.naturalsize(item["Size"]),
-                            date_modified=item["LastModified"])
+                            date_modified=item["LastModified"],
+                        )
                     )
 
     contents_list = list(contents)
@@ -74,21 +77,20 @@ def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
     return sorted(contents_list, key=lambda x: x.type, reverse=True)
 
 
-def list_objects(s3_client: botocore.client.BaseClient, bucket_name: str, path: str, delimiter: str = "") -> list[dict]:
-    responses = []
-    list_params = {"Bucket": bucket_name, "Prefix": path}
+def list_objects(
+    s3_client: botocore.client.BaseClient,
+    bucket_name: str,
+    path: str,
+    delimiter: str = "",
+    page_token: str | None = None,
+) -> list[dict]:
+    list_params = {"Bucket": bucket_name, "Prefix": path, "MaxKeys": 500}
     if delimiter:
         list_params["Delimiter"] = "/"
+    if page_token:
+        list_params["ContinuationToken"] = page_token
 
-    while True:
-        response = s3_client.list_objects_v2(**list_params)
-        responses.append(response)
-        if response["IsTruncated"]:
-            list_params["ContinuationToken"] = response["NextContinuationToken"]
-        else:
-            break
-
-    return responses
+    return s3_client.list_objects_v2(**list_params)
 
 
 @app.route("/search/buckets/<bucket_name>", defaults={"path": ""})
@@ -127,10 +129,48 @@ def search_bucket(bucket_name: str, path: str) -> str:
 @app.route("/buckets/<bucket_name>", defaults={"path": ""})
 @app.route("/buckets/<bucket_name>/<path:path>")
 def view_bucket(bucket_name: str, path: str) -> str:
+    page = request.args.get("page", 1, type=int)
+    items_per_page = 500
+
     s3_client = boto3.client("s3", **AWS_KWARGS)
-    responses = []
+
+    # Get total objects count for current prefix level only
+    paginator = s3_client.get_paginator("list_objects_v2")
+    total_objects = 0
+    for page_iterator in paginator.paginate(Bucket=bucket_name, Prefix=path, Delimiter="/"):
+        # Count folders (CommonPrefixes)
+        if "CommonPrefixes" in page_iterator:
+            total_objects += len(page_iterator["CommonPrefixes"])
+        # Count files (Contents) but exclude folder markers
+        if "Contents" in page_iterator:
+            total_objects += sum(1 for obj in page_iterator["Contents"] if not obj["Key"].endswith("/"))
+
+    total_pages = (total_objects + items_per_page - 1) // items_per_page
+
     try:
-        responses.extend(list_objects(s3_client, bucket_name, path, "/"))
+        # Calculate continuation token for the requested page
+        continuation_token = None
+        if page > 1:
+            temp_response = None
+            for _ in range(page - 1):
+                temp_response = list_objects(s3_client, bucket_name, path, "/", continuation_token)
+                if not temp_response.get("IsTruncated"):
+                    break
+                continuation_token = temp_response.get("NextContinuationToken")
+
+        # Get the current page contents
+        response = list_objects(s3_client, bucket_name, path, "/", continuation_token)
+        contents = parse_responses([response], request.args.get("search", ""))
+
+        return render_template(
+            "bucket_contents.html",
+            contents=contents,
+            bucket_name=bucket_name,
+            path=path,
+            search_param=request.args.get("search", ""),
+            current_page=page,
+            total_pages=total_pages,
+        )
     except botocore.exceptions.ClientError as e:
         match e.response["Error"]["Code"]:
             case "AccessDenied":
@@ -142,18 +182,6 @@ def view_bucket(bucket_name: str, path: str) -> str:
                 return render_template("error.html", error="The specified bucket does not exist.")
             case _:
                 return render_template("error.html", error=f"An unknown error occurred: {e}")
-    except Exception as e:  # noqa: BLE001
-        return render_template("error.html", error=f"An unknown error occurred: {e}")
-
-    search_param = request.args.get("search", "")
-    contents = parse_responses(responses, search_param)
-    return render_template(
-        "bucket_contents.html",
-        contents=contents,
-        bucket_name=bucket_name,
-        path=path,
-        search_param=search_param,
-    )
 
 
 @app.route("/download/buckets/<bucket_name>/<path:path>")
