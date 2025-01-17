@@ -10,16 +10,42 @@
 <h4>Contents of {{ bucket_name }}</h4>
 <a href="{{ url_for('index') }}" class="btn-small blue">Back to Buckets</a>
 {% if path %}
-<a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
+<a
+  href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
   class="btn-small">Go Up</a>
 {% endif %}
+
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if current_page > 1 %}
+  <a href="?page={{ current_page - 1 }}&search={{ search_param }}">&laquo;</a>
+  {% endif %}
+
+  {% for p in range(1, total_pages + 1) %}
+  {% if p == current_page %}
+  <span class="current">{{ p }}</span>
+  {% else %}
+  <a href="?page={{ p }}&search={{ search_param }}">{{ p }}</a>
+  {% endif %}
+  {% endfor %}
+
+  {% if current_page < total_pages %}
+  <a href="?page={{ current_page + 1 }}&search={{ search_param }}">&raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
 <ul class="collection">
   {% for item in contents %}
   <li class="collection-item">
     {% if item.type == "folder" %}
-      <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{ item.name }}</a>
+    <a
+      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{
+      item.name }}</a>
     {% else %}
-      {{ item.date_modified }} | {{ item.size }} | <a href="{{ url_for('download_file', bucket_name=bucket_name, path=item.name) }}" target="_blank">{{ item.name }}</a>
+    {{ item.date_modified }} | {{ item.size }} | <a
+      href="{{ url_for('download_file', bucket_name=bucket_name, path=item.name) }}"
+      target="_blank">{{ item.name }}</a>
     {% endif %}
   </li>
   {% endfor %}
