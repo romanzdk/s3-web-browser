@@ -22,4 +22,4 @@ USER nobody
 ENV PYTHONPATH=/usr/src/app
 EXPOSE 8000
 
-CMD ["gunicorn", "app:app"]
+CMD ["gunicorn", "run:app"]

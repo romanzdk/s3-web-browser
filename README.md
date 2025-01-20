@@ -45,7 +45,7 @@ S3 Web Browser is a Flask-based web application that allows users to browse AWS 
    export AWS_SECRET_ACCESS_KEY="your_secret_access_key"
    ```
 
-1. Run app - `poetry run gunicorn app:app`
+1. Run app - `poetry run python run.py`
 1. Access the app at http://127.0.0.1:8000/
 
 ## License
