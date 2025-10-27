@@ -128,14 +128,14 @@ tornado = ["tornado (>=0.2)"]
 
 [[package]]
 name = "humanize"
-version = "4.13.0"
+version = "4.14.0"
 description = "Python humanize utilities"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "humanize-4.13.0-py3-none-any.whl", hash = "sha256:b810820b31891813b1673e8fec7f1ed3312061eab2f26e3fa192c393d11ed25f"},
-    {file = "humanize-4.13.0.tar.gz", hash = "sha256:78f79e68f76f0b04d711c4e55d32bebef5be387148862cb1ef83d2b58e7935a0"},
+    {file = "humanize-4.14.0-py3-none-any.whl", hash = "sha256:d57701248d040ad456092820e6fde56c930f17749956ac47f4f655c0c547bfff"},
+    {file = "humanize-4.14.0.tar.gz", hash = "sha256:2fa092705ea640d605c435b1ca82b2866a1b601cdf96f076d70b79a855eba90d"},
 ]
 
 [package.extras]
@@ -378,4 +378,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "aaa156126eb833030ff59f2027ed611ccc96117c203d5209c19a0305e456d27c"
+content-hash = "6f4c5e1f850d6202aed3a9178b5a10a960e0b1fdeaf70b50ec67d02c08fa32c7"
