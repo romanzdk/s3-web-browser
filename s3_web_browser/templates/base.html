@@ -1,34 +1,493 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>S3 Browser</title>
-    <!-- Compiled and minified CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-    />
-    <!-- Google Fonts Roboto -->
-    <link
-      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500"
-      rel="stylesheet"
-    />
-    <style>
-      body {
-        font-family: 'Roboto', sans-serif;
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S3 Browser</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f8f9fa;
+      --surface:   #ffffff;
+      --border:    #e2e8f0;
+      --accent:    #2563eb;
+      --accent-h:  #1d4ed8;
+      --text:      #1e293b;
+      --text-muted:#64748b;
+      --text-xmut: #94a3b8;
+      --folder:    #f59e0b;
+      --danger:    #dc2626;
+      --radius:    6px;
+      --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: var(--shadow);
+    }
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    header .logo svg { color: var(--accent); flex-shrink: 0; }
+
+    /* ── Layout ── */
+    .page { max-width: 1024px; margin: 0 auto; padding: 24px 24px 48px; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 2px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .breadcrumb a { color: var(--accent); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb .sep { color: var(--text-xmut); padding: 0 2px; }
+    .breadcrumb .current { color: var(--text); font-weight: 500; }
+
+    /* ── Search ── */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .search-bar input {
+      flex: 1;
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .search-bar input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .search-bar input::placeholder { color: var(--text-xmut); }
+    .btn {
+      height: 36px;
+      padding: 0 14px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-h); }
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg); color: var(--text); }
+
+    /* ── Hint text ── */
+    .hint { font-size: 12px; color: var(--text-xmut); margin-top: -14px; margin-bottom: 16px; }
+
+    /* ── Actions bar ── */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .actions .spacer { flex: 1; }
+
+    /* ── File table ── */
+    .file-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .file-table-header {
+      display: grid;
+      grid-template-columns: 1fr 90px 150px 68px;
+      padding: 8px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-xmut);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .file-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 150px 68px;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+      transition: background .1s;
+    }
+    .file-row:last-child { border-bottom: none; }
+    .file-row:hover { background: #f8faff; }
+
+    .file-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .file-name svg { flex-shrink: 0; }
+    .file-name a {
+      color: var(--text);
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-name a:hover { color: var(--accent); }
+    .file-name.is-folder a { font-weight: 500; }
+
+    .file-size { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .file-date { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .file-action { display: flex; justify-content: flex-end; }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius);
+      color: var(--text-xmut);
+      transition: background .15s, color .15s;
+    }
+    .dl-btn:hover { background: var(--bg); color: var(--accent); }
+    .copy-btn { background: none; border: none; cursor: pointer; font: inherit; }
+    .copy-btn.copied { color: #16a34a; }
+    .file-action { gap: 2px; }
+
+    /* ── Empty state ── */
+    .empty {
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .empty svg { margin-bottom: 12px; color: var(--border); }
+    .empty p { font-size: 14px; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .pagination a, .pagination .pg-current, .pagination .pg-gap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 6px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .pagination a { color: var(--text-muted); border: 1px solid transparent; }
+    .pagination a:hover { background: var(--surface); border-color: var(--border); color: var(--text); }
+    .pagination .pg-current {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      pointer-events: none;
+    }
+    .pagination .pg-gap { color: var(--text-xmut); pointer-events: none; }
+    .pagination .pg-arrow { font-size: 16px; color: var(--text-muted); }
+
+    /* ── Bucket grid ── */
+    .bucket-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .bucket-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color .15s, box-shadow .15s;
+      box-shadow: var(--shadow);
+    }
+    .bucket-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+    }
+    .bucket-card svg { color: var(--folder); flex-shrink: 0; }
+    .bucket-card span {
+      font-size: 13px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Page title ── */
+    .page-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* ── Error ── */
+    .error-card {
+      background: var(--surface);
+      border: 1px solid #fecaca;
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      max-width: 480px;
+      margin: 64px auto;
+      box-shadow: var(--shadow);
+    }
+    .error-card svg { color: var(--danger); margin-bottom: 12px; }
+    .error-card h2 { font-size: 16px; margin-bottom: 8px; }
+    .error-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+
+    /* ── Count badge ── */
+    .count-badge {
+      font-size: 12px;
+      color: var(--text-xmut);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Progress bar ── */
+    #nprogress {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 3px;
+      z-index: 9999;
+      pointer-events: none;
+      transform: translateX(-100%);
+      transition: transform .2s ease, opacity .3s ease;
+      opacity: 0;
+      background: linear-gradient(to right, var(--accent), #60a5fa);
+    }
+    #nprogress.running {
+      opacity: 1;
+      animation: progress-run 1.8s ease-in-out infinite;
+    }
+    #nprogress.done {
+      transform: translateX(0);
+      opacity: 0;
+      transition: transform .15s ease, opacity .3s ease .1s;
+    }
+    @keyframes progress-run {
+      0%   { transform: translateX(-100%); }
+      50%  { transform: translateX(-15%); }
+      100% { transform: translateX(-5%); }
+    }
+
+    /* ── Loading overlay ── */
+    #loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(248,249,250,.6);
+      backdrop-filter: blur(1px);
+      z-index: 9998;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-msg {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ── Button loading state ── */
+    .btn.loading {
+      opacity: .7;
+      pointer-events: none;
+      cursor: default;
+    }
+    .btn.loading .btn-spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    .btn.loading .btn-icon { display: none; }
+  </style>
+</head>
+<body>
+  <div id="nprogress"></div>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-msg" id="loading-msg">Loading…</div>
+  </div>
+
+  <header>
+    <a href="/" class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+      </svg>
+      S3 Browser
+    </a>
+  </header>
+  <div class="page">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script>
+    const bar = document.getElementById('nprogress');
+    const overlay = document.getElementById('loading-overlay');
+    const loadingMsg = document.getElementById('loading-msg');
+    const DELAY_MS = 150; // don't show for fast loads
+    let timer = null;
+
+    function showLoading(msg) {
+      // Start the top progress bar immediately
+      bar.className = 'running';
+      // Show the overlay only if the response takes > DELAY_MS
+      timer = setTimeout(() => {
+        loadingMsg.textContent = msg || 'Loading…';
+        overlay.classList.add('visible');
+      }, DELAY_MS);
+    }
+
+    function hideLoading() {
+      clearTimeout(timer);
+      bar.className = 'done';
+      overlay.classList.remove('visible');
+      setTimeout(() => { bar.className = ''; }, 500);
+    }
+
+    // Intercept all same-origin link clicks (skip download links, anchors, external)
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href || href.startsWith('#') || a.target === '_blank') return;
+      try {
+        const url = new URL(href, location.href);
+        if (url.origin !== location.origin) return;
+      } catch { return; }
+      // Skip download route — browser handles that
+      if (href.includes('/download/')) return;
+      showLoading('Loading…');
+    });
+
+    // Intercept search form submit
+    document.addEventListener('submit', e => {
+      const form = e.target.closest('form');
+      if (!form) return;
+      const input = form.querySelector('input[name="search"]');
+      const val = input ? input.value.trim() : '';
+      const msg = val ? `Searching for "${val}"…` : 'Loading…';
+      showLoading(msg);
+      // Put the search button into loading state
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.classList.add('loading');
+        const icon = btn.querySelector('svg');
+        if (icon) icon.classList.add('btn-icon');
+        const sp = document.createElement('span');
+        sp.className = 'btn-spinner';
+        btn.prepend(sp);
       }
-      .container {
-        margin-top: 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <nav>
-      <div class="nav-wrapper blue">
-        <a href="/" class="brand-logo center">S3 File Browser</a>
-      </div>
-    </nav>
-    <div class="container">{% block content %}{% endblock %}</div>
-    <!-- Compiled and minified JavaScript -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  </body>
+    });
+
+    // Hide as soon as the new page starts painting (pageshow covers back/forward too)
+    window.addEventListener('pageshow', hideLoading);
+    // Safety net — hide if somehow already loaded
+    if (document.readyState === 'complete') hideLoading();
+    else window.addEventListener('load', hideLoading);
+
+    // Copy S3 path buttons
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      const path = btn.dataset.s3path;
+      navigator.clipboard.writeText(path).then(() => {
+        const iconCopy  = btn.querySelector('.icon-copy');
+        const iconCheck = btn.querySelector('.icon-check');
+        iconCopy.style.display  = 'none';
+        iconCheck.style.display = '';
+        btn.classList.add('copied');
+        btn.title = 'Copied!';
+        setTimeout(() => {
+          iconCopy.style.display  = '';
+          iconCheck.style.display = 'none';
+          btn.classList.remove('copied');
+          btn.title = 'Copy S3 path';
+        }, 1500);
+      });
+    });
+  </script>
+</body>
 </html>

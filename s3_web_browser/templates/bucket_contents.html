@@ -1,53 +1,149 @@
-{% extends "base.html" %} {% block content %}
-<form
-  action="{{ url_for('search_bucket', bucket_name=bucket_name, path=path) }}">
-  <input class="form-control" name="search" placeholder="{{ search_param }}"
-    autocomplete="off" autofocus="autofocus" type="text">
-  <button class="btn waves-effect waves-light" type="submit" name="action">
+{% extends "base.html" %}{% block content %}
+
+{# ── Breadcrumb ── #}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Buckets</a>
+  <span class="sep">/</span>
+  {% if path %}
+    <a href="{{ url_for('view_bucket', bucket_name=bucket_name) }}">{{ bucket_name }}</a>
+    {% set parts = path.rstrip('/').split('/') %}
+    {% for part in parts %}
+      <span class="sep">/</span>
+      {% set part_path = parts[:loop.index] | join('/') + '/' %}
+      {% if loop.last %}
+        <span class="current">{{ part }}</span>
+      {% else %}
+        <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=part_path) }}">{{ part }}</a>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <span class="current">{{ bucket_name }}</span>
+  {% endif %}
+</nav>
+
+{# ── Search ── #}
+<form class="search-bar" action="{{ url_for('search_bucket', bucket_name=bucket_name, path=path) }}">
+  <input
+    name="search"
+    value="{{ search_param }}"
+    placeholder="Search files and folders…"
+    autocomplete="off"
+    autofocus
+    type="text"
+  >
+  <button class="btn btn-primary" type="submit">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     Search
   </button>
+  {% if search_param %}
+  <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path) }}" class="btn btn-ghost">Clear</a>
+  {% endif %}
 </form>
-<h4>Contents of {{ bucket_name }}</h4>
-<a href="{{ url_for('index') }}" class="btn-small blue">Back to Buckets</a>
-{% if path %}
-<a
-  href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] if '/' in path.rstrip('/') else '') }}"
-  class="btn-small">Go Up</a>
+{% if not path and not search_param %}
+<p class="hint">Searching from bucket root scans all objects recursively and may be slow for large buckets.</p>
 {% endif %}
 
-{% if total_pages > 1 %}
-<div class="pagination">
-  {% if current_page > 1 %}
-  <a href="?page={{ current_page - 1 }}&search={{ search_param }}">&laquo;</a>
+{# ── Actions bar ── #}
+<div class="actions">
+  {% if path %}
+  <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=path.rstrip('/').rsplit('/', 1)[0] + '/' if '/' in path.rstrip('/') else '') }}" class="btn btn-ghost">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    Up
+  </a>
   {% endif %}
-
-  {% for p in range(1, total_pages + 1) %}
-  {% if p == current_page %}
-  <span class="current">{{ p }}</span>
+  {% if search_param %}
+  <span class="count-badge">
+    {{ contents | length }} result{% if contents | length != 1 %}s{% endif %} for "<strong>{{ search_param }}</strong>"
+    {% if total_pages > 1 %} &mdash; page {{ current_page }} of {{ total_pages }}{% endif %}
+  </span>
   {% else %}
-  <a href="?page={{ p }}&search={{ search_param }}">{{ p }}</a>
+  <span class="count-badge">{{ contents | length }} item{% if contents | length != 1 %}s{% endif %}{% if total_pages > 1 %} &mdash; page {{ current_page }} of {{ total_pages }}{% endif %}</span>
   {% endif %}
-  {% endfor %}
+</div>
 
-  {% if current_page < total_pages %}
-  <a href="?page={{ current_page + 1 }}&search={{ search_param }}">&raquo;</a>
-  {% endif %}
+{# ── File listing ── #}
+{% if contents %}
+<div class="file-table">
+  <div class="file-table-header">
+    <div>Name</div>
+    <div>Size</div>
+    <div>Modified</div>
+    <div></div>
+  </div>
+  {% for item in contents %}
+  <div class="file-row">
+    {% if item.type == "folder" %}
+    <div class="file-name is-folder">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+      </svg>
+      <a href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}" title="{{ item.name }}">
+        {{ item.name.rstrip('/').rsplit('/', 1)[-1] }}/
+      </a>
+    </div>
+    <div class="file-size">—</div>
+    <div class="file-date">—</div>
+    <div class="file-action"></div>
+    {% else %}
+    <div class="file-name">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <a href="{{ url_for('download_file', bucket_name=bucket_name, path=item.name) }}" target="_blank" title="{{ item.name }}">
+        {{ item.name.rsplit('/', 1)[-1] }}
+      </a>
+    </div>
+    <div class="file-size">{{ item.size }}</div>
+    <div class="file-date">{{ item.date_modified }}</div>
+    <div class="file-action">
+      <button class="dl-btn copy-btn" title="Copy S3 path" data-s3path="s3://{{ bucket_name }}/{{ item.name }}">
+        <svg class="icon-copy" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <svg class="icon-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+      <a href="{{ url_for('download_file', bucket_name=bucket_name, path=item.name) }}" target="_blank" class="dl-btn" title="Download">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <p>{% if search_param %}No results for "{{ search_param }}".{% else %}This folder is empty.{% endif %}</p>
 </div>
 {% endif %}
 
-<ul class="collection">
-  {% for item in contents %}
-  <li class="collection-item">
-    {% if item.type == "folder" %}
-    <a
-      href="{{ url_for('view_bucket', bucket_name=bucket_name, path=item.name) }}">{{
-      item.name }}</a>
-    {% else %}
-    {{ item.date_modified }} | {{ item.size }} | <a
-      href="{{ url_for('download_file', bucket_name=bucket_name, path=item.name) }}"
-      target="_blank">{{ item.name }}</a>
+{# ── Pagination ── #}
+{% if total_pages > 1 %}
+{% set w = 2 %}
+<nav class="pagination">
+  {% if current_page > 1 %}
+  <a href="?page={{ current_page - 1 }}&search={{ search_param | urlencode }}" class="pg-arrow" title="Previous">&#8249;</a>
+  {% endif %}
+
+  {# Always show: first, last, and a window around current page #}
+  {% set ns = namespace(prev_shown=false) %}
+  {% for p in range(1, total_pages + 1) %}
+    {% if p == 1 or p == total_pages or (p >= current_page - w and p <= current_page + w) %}
+      {% if ns.prev_shown and p > ns.last_p + 1 %}
+        <span class="pg-gap">…</span>
+      {% endif %}
+      {% if p == current_page %}
+        <span class="pg-current">{{ p }}</span>
+      {% else %}
+        <a href="?page={{ p }}&search={{ search_param | urlencode }}">{{ p }}</a>
+      {% endif %}
+      {% set ns.prev_shown = true %}
+      {% set ns.last_p = p %}
     {% endif %}
-  </li>
   {% endfor %}
-</ul>
+
+  {% if current_page < total_pages %}
+  <a href="?page={{ current_page + 1 }}&search={{ search_param | urlencode }}" class="pg-arrow" title="Next">&#8250;</a>
+  {% endif %}
+</nav>
+{% endif %}
+
 {% endblock %}

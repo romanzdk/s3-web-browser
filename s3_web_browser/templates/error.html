@@ -1,11 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Error</title>
-    </head>
-    <body>
-        <h1>An error occurred</h1>
-        <p>{{ error }}</p>
-    </body>
-</html>
+{% extends "base.html" %}{% block content %}
+<div class="error-card">
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  <h2>Something went wrong</h2>
+  <p>{{ error }}</p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Buckets</a>
+</div>
+{% endblock %}

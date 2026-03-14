@@ -31,7 +31,7 @@ def parse_responses(responses: list, search_param: str) -> list[S3Entry]:
                             name=item["Key"],
                             type="file",
                             size=humanize.naturalsize(item["Size"]),
-                            date_modified=item["LastModified"],
+                            date_modified=item["LastModified"].strftime("%Y-%m-%d %H:%M UTC"),
                         )
                     )
 

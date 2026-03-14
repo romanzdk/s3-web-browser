@@ -29,14 +29,14 @@ def register_routes(app: Flask) -> None:  # noqa:C901
         all_prefixes = []
 
         try:
-            # Collect all objects and folders
+            # Collect all objects — extend (not assign) to keep results across all S3 pages
             for page_iterator in paginator.paginate(Bucket=bucket_name, Prefix=path):
                 if "Contents" in page_iterator:
-                    all_entries = [
+                    all_entries.extend(
                         {"Key": item["Key"], "Size": item["Size"], "LastModified": item["LastModified"]}
                         for item in page_iterator["Contents"]
                         if not item["Key"].endswith("/")
-                    ]
+                    )
 
             for page_iterator in paginator.paginate(Bucket=bucket_name, Prefix=path, Delimiter="/"):
                 if "CommonPrefixes" in page_iterator:
@@ -50,7 +50,9 @@ def register_routes(app: Flask) -> None:  # noqa:C901
 
             # Calculate pagination
             total_items = len(contents)
-            total_pages = (total_items + items_per_page - 1) // items_per_page
+            total_pages = (total_items + items_per_page - 1) // items_per_page if total_items else 1
+            # Clamp page to valid range
+            page = max(1, min(page, total_pages))
             start_idx = (page - 1) * items_per_page
             end_idx = start_idx + items_per_page
             paginated_contents = contents[start_idx:end_idx]
@@ -80,50 +82,61 @@ def register_routes(app: Flask) -> None:  # noqa:C901
     @app.route("/buckets/<bucket_name>", defaults={"path": ""})
     @app.route("/buckets/<bucket_name>/<path:path>")
     def view_bucket(bucket_name: str, path: str) -> str:
+        # If a search param is present on a browse URL, redirect to the search route
+        search_param = request.args.get("search", "")
+        if search_param:
+            return redirect(
+                request.url_root.rstrip("/")
+                + f"/search/buckets/{bucket_name}/{path}".rstrip("/")
+                + f"?search={search_param}"
+            )
+
         page = request.args.get("page", 1, type=int)
-        items_per_page = 500
+        items_per_page = app.config["PAGE_ITEMS"]
 
         s3_client = boto3.client("s3", **app.config["AWS_KWARGS"])
 
-        # Get total objects count for current prefix level only
-        paginator = s3_client.get_paginator("list_objects_v2")
-        total_objects = 0
-        for page_iterator in paginator.paginate(Bucket=bucket_name, Prefix=path, Delimiter="/"):
-            # Count folders (CommonPrefixes)
-            if "CommonPrefixes" in page_iterator:
-                total_objects += len(page_iterator["CommonPrefixes"])
-            # Count files (Contents) but exclude folder markers
-            if "Contents" in page_iterator:
-                total_objects += sum(1 for obj in page_iterator["Contents"] if not obj["Key"].endswith("/"))
-
-        total_pages = (total_objects + items_per_page - 1) // items_per_page
-
         try:
-            # Calculate continuation token for the requested page
+            # Count total objects and find the continuation token for the requested page in one pass
+            paginator = s3_client.get_paginator("list_objects_v2")
+            total_objects = 0
             continuation_token = None
-            if page > 1:
-                temp_response = None
-                for _ in range(page - 1):
-                    temp_response = list_objects(
-                        s3_client, bucket_name, path, app.config["PAGE_ITEMS"], "/", continuation_token
-                    )
-                    if not temp_response.get("IsTruncated"):
-                        break
-                    continuation_token = temp_response.get("NextContinuationToken")
+            for pages_seen, page_iterator in enumerate(
+                paginator.paginate(
+                    Bucket=bucket_name,
+                    Prefix=path,
+                    Delimiter="/",
+                    PaginationConfig={"PageSize": items_per_page},
+                ),
+                start=1,
+            ):
+                if "CommonPrefixes" in page_iterator:
+                    total_objects += len(page_iterator["CommonPrefixes"])
+                if "Contents" in page_iterator:
+                    total_objects += sum(1 for obj in page_iterator["Contents"] if not obj["Key"].endswith("/"))
 
-            # Get the current page contents
-            response = list_objects(s3_client, bucket_name, path, app.config["PAGE_ITEMS"], "/", continuation_token)
-            contents = parse_responses([response], request.args.get("search", ""))
+                # Capture the token needed to reach the requested page
+                if pages_seen == page - 1:
+                    continuation_token = page_iterator.get("NextContinuationToken")
+
+            total_pages = (total_objects + items_per_page - 1) // items_per_page if total_objects else 1
+            # Clamp page to valid range
+            page = max(1, min(page, total_pages))
+
+            # Re-fetch if clamping changed the page (avoids re-running the full count)
+            response = list_objects(s3_client, bucket_name, path, items_per_page, "/", continuation_token)
+            contents = parse_responses([response], "")
 
             return render_template(
                 "bucket_contents.html",
                 contents=contents,
                 bucket_name=bucket_name,
                 path=path,
-                search_param=request.args.get("search", ""),
+                search_param="",
                 current_page=page,
                 total_pages=total_pages,
             )
+
         except botocore.exceptions.ClientError as e:
             match e.response["Error"]["Code"]:
                 case "AccessDenied":
