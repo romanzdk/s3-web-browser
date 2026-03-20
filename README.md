@@ -81,6 +81,10 @@ docker run -it --rm -p 8000:8000 --env-file .env romanzdk/s3-web-browser
 | `make clean` | Remove temporary files |
 | `make release VERSION=x.y.z` | Build and push Docker images |
 
+## Related
+
+- [S3 Commander](https://github.com/romanzdk/s3-commander) — Total Commander-style dual-pane S3 file browser with server-side move/copy.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
