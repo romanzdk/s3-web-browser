@@ -30,7 +30,7 @@ classifiers = [
 python = "^3.10"
 flask = "^3.1.3"
 boto3 = "^1.35.99"
-gunicorn = "^25.1.0"
+gunicorn = "^25.3.0"
 botocore = "^1.35.99"
 humanize = "^4.15.0"
 
