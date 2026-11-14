@@ -1,26 +1,30 @@
 import boto3
 import botocore
 from flask import Flask, Response, redirect, render_template, request
+from werkzeug import exceptions
 
 from s3_web_browser.s3 import list_objects, parse_responses
 
 
 def register_routes(app: Flask) -> None:  # noqa:C901
+
+    def raise_if_bucket_forbidden(bucket_name: str):
+        if app.config["FILTER_BUCKETS"] and bucket_name not in app.config["FILTER_BUCKETS"]:
+            raise exceptions.Forbidden()
+
     @app.route("/", methods=["GET"])
+    @app.route("/buckets")
     def index() -> str:
         s3 = boto3.resource("s3", **app.config["AWS_KWARGS"])
         all_buckets = s3.buckets.all()
-        return render_template("index.html", buckets=all_buckets)
-
-    @app.route("/buckets")
-    def buckets() -> str:
-        s3 = boto3.resource("s3", **app.config["AWS_KWARGS"])
-        all_buckets = s3.buckets.all()
+        if app.config["FILTER_BUCKETS"]:
+            all_buckets = filter(lambda bucket: bucket.name in app.config["FILTER_BUCKETS"], all_buckets)
         return render_template("index.html", buckets=all_buckets)
 
     @app.route("/search/buckets/<bucket_name>", defaults={"path": ""})
     @app.route("/search/buckets/<bucket_name>/<path:path>")
     def search_bucket(bucket_name: str, path: str) -> str:
+        raise_if_bucket_forbidden(bucket_name)
         page = request.args.get("page", 1, type=int)
         items_per_page = app.config["PAGE_ITEMS"]
         s3_client = boto3.client("s3", **app.config["AWS_KWARGS"])
@@ -82,6 +86,7 @@ def register_routes(app: Flask) -> None:  # noqa:C901
     @app.route("/buckets/<bucket_name>", defaults={"path": ""})
     @app.route("/buckets/<bucket_name>/<path:path>")
     def view_bucket(bucket_name: str, path: str) -> str:
+        raise_if_bucket_forbidden(bucket_name)
         # If a search param is present on a browse URL, redirect to the search route
         search_param = request.args.get("search", "")
         if search_param:
@@ -151,6 +156,7 @@ def register_routes(app: Flask) -> None:  # noqa:C901
 
     @app.route("/download/buckets/<bucket_name>/<path:path>")
     def download_file(bucket_name: str, path: str) -> Response:
+        raise_if_bucket_forbidden(bucket_name)
         s3_client = boto3.client("s3", **app.config["AWS_KWARGS"])
         url = s3_client.generate_presigned_url(
             "get_object",
