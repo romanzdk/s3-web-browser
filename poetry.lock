@@ -106,22 +106,22 @@ dotenv = ["python-dotenv"]
 
 [[package]]
 name = "gunicorn"
-version = "26.2.0"
+version = "27.0.1"
 description = "WSGI HTTP Server for UNIX"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "gunicorn-26.2.0-py3-none-any.whl", hash = "sha256:bd249d0b3f7972f7432f0a6b6ff3b3ee2d129f70cd1ff6c09a9dd9e29a2b88e3"},
-    {file = "gunicorn-26.2.0.tar.gz", hash = "sha256:62b864895d9ebff0b2f9867ba04fe811c93121596540830c9c916d0769668447"},
+    {file = "gunicorn-27.0.1-py3-none-any.whl", hash = "sha256:378b26b9a38adcf4592f28828233c1716acc55e833ea06bf48719782efaa0d10"},
+    {file = "gunicorn-27.0.1.tar.gz", hash = "sha256:b1514965361c8b7e8107a80aa2a92636878df1ccfac6dd204a676426e04d9e3e"},
 ]
 
 [package.extras]
-fast = ["gunicorn_h1c (>=0.6.9)"]
+fast = ["gunicorn_h1c (>=0.6.14)"]
 gevent = ["gevent (>=24.10.1)", "packaging"]
 http2 = ["h2 (>=4.4.1)"]
 setproctitle = ["setproctitle"]
-testing = ["coverage", "gevent (>=24.10.1)", "h2 (>=4.4.1)", "httpx[http2] (>=0.23.0)", "inotify (>=0.2.10) ; sys_platform == \"linux\"", "packaging", "pytest (>=9.0.3)", "pytest-asyncio", "pytest-cov", "uvloop (>=0.19.0)"]
+testing = ["coverage", "gevent (>=24.10.1)", "h2 (>=4.4.1)", "httpx[http2] (>=0.23.0)", "inotify (>=0.2.10) ; sys_platform == \"linux\"", "packaging", "pytest (>=9.0.3)", "pytest-asyncio", "pytest-cov", "uvloop (>=0.19.0) ; platform_python_implementation != \"PyPy\""]
 tornado = ["tornado (>=6.5.7)"]
 
 [[package]]
@@ -363,4 +363,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "3020e26a831ae939c219324f030cc3229f8dc2db3d06476265c1c388d78c2f85"
+content-hash = "a272a049780b5948848f2293bd212ef56d52cd1754cf98268ca456dd6ec3abbb"
