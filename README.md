@@ -93,3 +93,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Flask for providing the web framework.
 - AWS Boto3 for interfacing with Amazon S3.
+
+---
+
+Made by [Roman Žydyk](https://romanzdk.com).
