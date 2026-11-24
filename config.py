@@ -21,3 +21,9 @@ class Config:  # noqa: D101
         AWS_KWARGS["endpoint_url"] = AWS_ENDPOINT_URL
 
     PAGE_ITEMS = int(os.getenv("PAGE_ITEMS", "300"))
+
+    FILTER_BUCKETS = os.getenv("FILTER_BUCKETS", "")
+    if FILTER_BUCKETS:
+        FILTER_BUCKETS = FILTER_BUCKETS.split(",")
+    else:
+        FILTER_BUCKETS = []
